@@ -1773,31 +1773,31 @@ display:none;
 .stack__card:nth-child(1){
 z-index:5;
 transform-origin:center center;
-transform:translate3d(0,198px,0) scale(.82);
+transform:translate3d(0,154px,0) scale(.94);
 }
 
 .stack__card:nth-child(2){
 z-index:4;
 transform-origin:center center;
-transform:translate3d(0,235px,0) scale(.78);
+transform:translate3d(0,191px,0) scale(.89);
 }
 
 .stack__card:nth-child(3){
 z-index:3;
 transform-origin:center center;
-transform:translate3d(0,258px,0) scale(.73);
+transform:translate3d(0,214px,0) scale(.84);
 }
 
 .stack__card:nth-child(4){
 z-index:2;
 transform-origin:center center;
-transform:translate3d(0,273px,0) scale(.69);
+transform:translate3d(0,229px,0) scale(.79);
 }
 
 .stack__card:nth-child(5){
 z-index:1;
 transform-origin:center center;
-transform:translate3d(0,282px,0) scale(.64);
+transform:translate3d(0,238px,0) scale(.74);
 }
 
 .stack__card:hover > a{
@@ -4067,4 +4067,86 @@ body.nav-menu-open{overflow:hidden;}
 .project-rail__card{flex-basis:29.5vw;}
 .project-rail__content h3{font-size:.62rem;}
 .project-rail__category{font-size:.42rem;}
+}
+
+
+/* ==========================================================================
+   MOBILE WIDTH + CAMPUS EV METRIC COMPACTION
+   ========================================================================== */
+
+@media (max-width:900px){
+
+.stack__card{
+width:94vw;
+max-width:560px;
+}
+
+}
+
+@media (max-width:768px){
+
+.metrics{
+grid-template-columns:repeat(4,minmax(0,1fr));
+gap:0;
+margin-top:var(--sp-6);
+}
+
+.metric{
+min-width:0;
+padding:1.15rem .55rem;
+gap:.5rem;
+border-right:1px solid rgba(255,255,255,.08);
+border-bottom:none;
+}
+
+.metric:nth-child(2),
+.metric:nth-child(3),
+.metric:nth-child(4){
+border-top:none;
+}
+
+.metric:nth-child(2),
+.metric:nth-child(4){
+border-right:1px solid rgba(255,255,255,.08);
+}
+
+.metric:last-child{
+border-right:none;
+border-bottom:none;
+}
+
+.metric__value{
+font-size:clamp(.9rem,4.2vw,1.45rem);
+white-space:nowrap;
+}
+
+.metric__label{
+font-size:clamp(.36rem,1.45vw,.5rem);
+line-height:1.35;
+letter-spacing:.08em;
+overflow-wrap:anywhere;
+}
+
+}
+
+@media (max-width:480px){
+
+.metrics{
+grid-template-columns:repeat(4,minmax(0,1fr));
+}
+
+.metric{
+padding:1rem .4rem;
+border-bottom:none;
+}
+
+.metric__value{
+font-size:clamp(.82rem,4vw,1.15rem);
+}
+
+.metric__label{
+font-size:.36rem;
+letter-spacing:.06em;
+}
+
 }
