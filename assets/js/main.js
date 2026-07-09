@@ -129,33 +129,87 @@ function initHero() {
     if (!video) return;
 
     const hero = video.closest('.hero');
+    if (!hero) return;
+
+    let mediaRequested = false;
+    let heroVisible = true;
+
+    const pause = () => video.pause();
 
     const play = () => {
-        if (reduce.matches) {
-            video.pause();
+        if (
+            reduce.matches ||
+            !heroVisible ||
+            d.visibilityState === 'hidden'
+        ) {
+            pause();
             return;
         }
 
         const result = video.play();
-        result?.catch?.(() => hero?.classList.add('hero--video-paused'));
+        result?.catch?.(() =>
+            hero.classList.add('hero--video-paused')
+        );
+    };
+
+    const requestMedia = () => {
+        if (mediaRequested || reduce.matches) return;
+
+        mediaRequested = true;
+        video.load();
+        play();
     };
 
     video.addEventListener('error', () => {
-        video.pause();
+        pause();
         video.hidden = true;
-        hero?.classList.add('hero--video-fallback');
+        hero.classList.add('hero--video-fallback');
     }, { once: true });
 
     video.addEventListener('stalled', () =>
-        hero?.classList.add('hero--video-stalled')
+        hero.classList.add('hero--video-stalled')
     );
 
     video.addEventListener('playing', () =>
-        hero?.classList.remove('hero--video-paused', 'hero--video-stalled')
+        hero.classList.remove(
+            'hero--video-paused',
+            'hero--video-stalled'
+        )
     );
 
-    reduce.addEventListener?.('change', e => e.matches ? video.pause() : play());
-    play();
+    if ('IntersectionObserver' in w) {
+        const observer = new IntersectionObserver(entries => {
+            heroVisible = entries[0]?.isIntersecting ?? false;
+
+            if (!heroVisible) {
+                pause();
+                return;
+            }
+
+            if (mediaRequested) play();
+        }, { threshold: 0.05 });
+
+        observer.observe(hero);
+    }
+
+    d.addEventListener('visibilitychange', () => {
+        if (d.visibilityState === 'hidden') {
+            pause();
+        } else if (mediaRequested) {
+            play();
+        }
+    });
+
+    reduce.addEventListener?.('change', event => {
+        if (event.matches) {
+            pause();
+            return;
+        }
+
+        requestMedia();
+    });
+
+    idle(requestMedia);
 }
 
 /* MARQUEE */
@@ -174,37 +228,83 @@ function initMarquee() {
         let offset = 0;
         let lastTime = null;
         let rafId = 0;
+        let visible = true;
         const speed = 40;
 
         const measure = () => {
             groupWidth = groups[0].getBoundingClientRect().width;
         };
 
-        track.style.animation = 'none';
-        track.style.willChange = 'transform';
+        const stop = () => {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = 0;
+            lastTime = null;
+        };
 
         const tick = time => {
+            if (!visible || reduce.matches) {
+                stop();
+                return;
+            }
+
             if (lastTime === null) lastTime = time;
             const dt = (time - lastTime) / 1000;
             lastTime = time;
 
-            if (!reduce.matches && groupWidth > 0) {
+            if (groupWidth > 0) {
                 offset -= speed * dt;
                 if (offset <= -groupWidth) offset += groupWidth;
             }
 
-            track.style.transform = `translate3d(${offset}px,0,0)`;
+            track.style.transform =
+                `translate3d(${offset}px,0,0)`;
+
             rafId = requestAnimationFrame(tick);
         };
 
+        const start = () => {
+            if (
+                rafId ||
+                !visible ||
+                reduce.matches ||
+                d.visibilityState === 'hidden'
+            ) return;
+
+            lastTime = null;
+            rafId = requestAnimationFrame(tick);
+        };
+
+        track.style.animation = 'none';
+        track.style.willChange = 'transform';
+
         measure();
-        rafId = requestAnimationFrame(tick);
+
+        if ('IntersectionObserver' in w) {
+            const observer = new IntersectionObserver(entries => {
+                visible = entries[0]?.isIntersecting ?? false;
+                visible ? start() : stop();
+            }, { threshold: 0 });
+
+            observer.observe(marquee);
+        } else {
+            start();
+        }
+
+        d.addEventListener('visibilitychange', () => {
+            d.visibilityState === 'hidden' ? stop() : start();
+        });
 
         w.addEventListener('resize', debounce(measure, 150));
         d.fonts?.ready?.then(measure).catch(() => {});
 
-        reduce.addEventListener?.('change', () => {
-            if (reduce.matches) track.style.transform = 'translate3d(0,0,0)';
+        reduce.addEventListener?.('change', event => {
+            if (event.matches) {
+                stop();
+                track.style.transform = 'translate3d(0,0,0)';
+                return;
+            }
+
+            start();
         });
     });
 }
@@ -398,73 +498,71 @@ function initProjectStack() {
     };
 
     const mobileLayoutFor = activeIndex => {
+        /*
+         * Cards always face the viewport flat now — no rotateX. Depth is
+         * conveyed purely by vertical offset, stacking order and a gentle
+         * scale taper, so each layer visibly peeks out from behind the one
+         * in front of it (the previously-active card peeking above the new
+         * active card; the next-up card's bottom peeking below it).
+         *
+         * baseStep is solved directly from the measured stage height so a
+         * full 4-layer fan — in EITHER direction — always fits inside the
+         * stage: it can never climb above the stage into the eyebrow, and
+         * can never reach down into the preview below.
+         */
         const usableHeight = Math.max(240, stackHeight);
-        const marginTop = 12;
-        const marginBottom = 28;
 
-        /*
-         * Mobile card width is controlled by CSS. Do not derive scale from
-         * stage height: that was shrinking the wider 94vw card back to the
-         * old visual width. Scale is width-led so the card actually fills
-         * the viewport as requested.
-         */
-        const activeScale = clamp((stackWidth * .94) / cardWidth, .90, .96);
+        const activeScale = clamp((usableHeight * .4) / cardHeight, .6, .82);
         const activeHeight = cardHeight * activeScale;
+        const farScale = Math.max(.58, activeScale - 4 * .045);
+        const farHalfHeight = (cardHeight * farScale) / 2;
 
-        /*
-         * Solve the vertical fan from the real transformed card heights.
-         * The preview owns the space below .stack, so the whole fan is
-         * fitted between marginTop and usableHeight - marginBottom.
-         */
-        const scales = cards.map((_, index) => {
-            const distance = Math.abs(index - activeIndex);
-            return index === activeIndex
-                ? activeScale
-                : Math.max(.70, activeScale - distance * .05);
-        });
+        // How far the deck anchor travels upward from the first project to
+        // the last, plus the clearance kept above/below the fan.
+        const travelRange = clamp(usableHeight * .14, 24, 90);
+        const marginTop = 14;
+        const marginBottom = 18;
 
-        const maxDistance = Math.max(activeIndex, cards.length - activeIndex - 1);
-        const topHalf = cardHeight * scales[0] / 2;
-        const bottomHalf = cardHeight * scales[cards.length - 1] / 2;
-        const verticalRoom = Math.max(
-            0,
-            usableHeight - marginTop - marginBottom - topHalf - bottomHalf
+        // Solve baseStep so a 4-layer fan in both directions, plus the
+        // travel range, plus both card halves, fits inside usableHeight.
+        const baseStep = clamp(
+            (usableHeight - farHalfHeight * 2 - travelRange - marginTop - marginBottom) / (PEEK_REACH * 2),
+            14, 70
         );
 
-        const reach = PEEK_RATIOS
-            .slice(0, maxDistance)
-            .reduce((sum, ratio) => sum + ratio, 0);
-
-        const baseStep = reach > 0
-            ? clamp(verticalRoom / Math.max(PEEK_REACH, reach * 1.35), 8, 42)
-            : 0;
-
-        const topReach = peekOffset(activeIndex, baseStep);
-        const bottomReach = peekOffset(cards.length - activeIndex - 1, baseStep);
-
-        const minAnchor = marginTop + topReach;
-        const maxAnchor = Math.max(
-            minAnchor,
-            usableHeight - marginBottom - activeHeight - bottomReach
+        const anchorEnd = Math.max(
+            PEEK_REACH * baseStep + farHalfHeight + marginTop,
+            activeHeight * .5 + marginTop,
+            40
         );
+        const anchorStart = anchorEnd + travelRange;
 
         const travelProgress = activeIndex / Math.max(1, cards.length - 1);
-        const activeY = maxAnchor + (minAnchor - maxAnchor) * travelProgress;
+        const activeY = anchorStart + (anchorEnd - anchorStart) * travelProgress;
 
         const states = cards.map((_, index) => {
+            if (index === activeIndex) {
+                return { y: activeY, scale: activeScale };
+            }
+
             const distance = Math.abs(index - activeIndex);
+            const scale = Math.max(.58, activeScale - distance * .045);
             const offset = peekOffset(distance, baseStep);
 
             return {
                 y: index < activeIndex ? activeY - offset : activeY + offset,
-                scale: scales[index]
+                scale
             };
         });
 
         /*
-         * Final transformed-bounds clamp. Unlike the old correction, this
-         * uses top-origin transform geometry and applies one bounded shift,
-         * so correcting the top cannot push the deck back over the preview.
+         * CSS translates each absolutely-positioned card from top:0, while
+         * scaling around its centre. The layout math above builds a centred
+         * fan, so its raw Y values can leave the lowest peeking card below
+         * the measured stack row and visually on top of .stack-preview.
+         * Measure the fan's true transformed bounds and shift the whole deck
+         * back inside the stage. This changes only vertical placement; card
+         * order, scale, peeks and scroll behaviour stay untouched.
          */
         const visualTop = state =>
             state.y + (cardHeight * (1 - state.scale)) / 2;
@@ -473,12 +571,15 @@ function initProjectStack() {
 
         const minTop = Math.min(...states.map(visualTop));
         const maxBottom = Math.max(...states.map(visualBottom));
-        const lowerShift = marginTop - minTop;
-        const upperShift = usableHeight - marginBottom - maxBottom;
-        const shift = clamp(0, Math.min(0, lowerShift), Math.max(0, upperShift));
+        const topLimit = marginTop;
+        const bottomLimit = usableHeight - marginBottom;
 
-        if (shift) {
-            states.forEach(state => { state.y += shift; });
+        let correction = 0;
+        if (maxBottom > bottomLimit) correction = bottomLimit - maxBottom;
+        if (minTop + correction < topLimit) correction += topLimit - (minTop + correction);
+
+        if (correction) {
+            states.forEach(state => { state.y += correction; });
         }
 
         return states;
@@ -887,22 +988,6 @@ function initPerformance() {
         sections.forEach(section => observer.observe(section));
     }
 
-    const video = $('.hero__video');
-    const hero = $('.hero');
-
-    if (!video || !hero || !('IntersectionObserver' in w)) return;
-
-    const videoObserver = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-            if (reduce.matches || !entry.isIntersecting) {
-                video.pause();
-            } else {
-                video.play().catch(() => {});
-            }
-        });
-    }, { threshold: 0.05 });
-
-    videoObserver.observe(hero);
 }
 
 /* INITIALISATION */

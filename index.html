@@ -99,16 +99,11 @@ HERO
 
     <video
         class="hero__video"
-        autoplay
         muted
         loop
         playsinline
-        preload="auto"
+        preload="none"
         poster="assets/images/hero-poster.jpg">
-
-        <source
-            src="assets/video/blender-showreel.webm"
-            type="video/webm">
 
         <source
             src="assets/video/blender-showreel.mp4"
@@ -236,10 +231,17 @@ PROJECTS
 
         <a href="projects/campus-ev.html">
 
-            <img
-                src="assets/images/campus-ev/hero.jpg"
-                alt="Campus EV"
-                loading="lazy">
+            <picture>
+                <source
+                    media="(max-width: 900px)"
+                    srcset="assets/images/campus-ev/hero-mobile.webp">
+
+                <img
+                    src="assets/images/campus-ev/hero-card.webp"
+                    alt="Campus EV"
+                    loading="lazy"
+                    decoding="async">
+            </picture>
 
             <div class="stack__content">
 
@@ -269,10 +271,17 @@ PROJECTS
 
         <a href="projects/powerbank.html">
 
-            <img
-                src="assets/images/powerbank/hero.jpg"
-                alt="Power Bank"
-                loading="lazy">
+            <picture>
+                <source
+                    media="(max-width: 900px)"
+                    srcset="assets/images/powerbank/hero-mobile.webp">
+
+                <img
+                    src="assets/images/powerbank/hero.jpg"
+                    alt="Power Bank"
+                    loading="lazy"
+                    decoding="async">
+            </picture>
 
             <div class="stack__content">
 
@@ -302,10 +311,17 @@ PROJECTS
 
         <a href="projects/audi-suv.html">
 
-            <img
-                src="assets/images/audi-suv/hero.jpg"
-                alt="Audi SUV"
-                loading="lazy">
+            <picture>
+                <source
+                    media="(max-width: 900px)"
+                    srcset="assets/images/audi-suv/hero-mobile.webp">
+
+                <img
+                    src="assets/images/audi-suv/hero.jpg"
+                    alt="Audi SUV"
+                    loading="lazy"
+                    decoding="async">
+            </picture>
 
             <div class="stack__content">
 
@@ -335,10 +351,17 @@ PROJECTS
 
         <a href="projects/laptop-stand.html">
 
-            <img
-                src="assets/images/laptop-stand/hero.jpg"
-                alt="Laptop Stand"
-                loading="lazy">
+            <picture>
+                <source
+                    media="(max-width: 900px)"
+                    srcset="assets/images/laptop-stand/hero-mobile.webp">
+
+                <img
+                    src="assets/images/laptop-stand/hero.jpg"
+                    alt="Laptop Stand"
+                    loading="lazy"
+                    decoding="async">
+            </picture>
 
             <div class="stack__content">
 
@@ -368,10 +391,17 @@ PROJECTS
 
         <a href="projects/peugeot-e208.html">
 
-            <img
-                src="assets/images/peugeot-e208/hero.jpg"
-                alt="Peugeot e-208"
-                loading="lazy">
+            <picture>
+                <source
+                    media="(max-width: 900px)"
+                    srcset="assets/images/peugeot-e208/hero-mobile.webp">
+
+                <img
+                    src="assets/images/peugeot-e208/hero.jpg"
+                    alt="Peugeot e-208"
+                    loading="lazy"
+                    decoding="async">
+            </picture>
 
             <div class="stack__content">
 
